@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 35%;
+            max-width: 1100px;
+            margin: auto;
+            overflow: hidden;
+        }
+
+        header {
+            background: #333;
+            color: #fff;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        header #time {
+            margin-top: 10px;
+            font-size: 0.8em;
+            color: #ccc;
+        }
+
+        section {
+            background: #fff;
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 90%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            background: #333;
+            color: #fff;
+            border: 0;
+            padding: 10px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        ul li {
+            background: #eee;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-left: 5px solid #333;
+        }
+
+        #report, #charts {
+            margin-top: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Task Manager</h1>
+            <div id="time"></div>
+        </header>
+        <section>
+            <h2>Add Task</h2>
+            <div class="form-group">
+                <label for="category">Category:</label>
+                <select id="category">
+                    <option value="Professional">Professional</option>
+                    <option value="Personal">Personal</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="task">Task:</label>
+                <input type="text" id="task">
+            </div>
+            <div class="form-group">
+                <label for="priority">Priority:</label>
+                <select id="priority">
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="status">Status:</label>
+                <select id="status">
+                    <option value="Completed">Completed</option>
+                    <option value="Incomplete">Incomplete</option>
+                    <option value="Pending">Pending</option>
+                </select>
+            </div>
+            <button onclick="addTask()">Add Task</button>
+        </section>
+        <section>
+            <h2>Tasks for the Month</h2>
+            <ul id="task-list"></ul>
+        </section>
+        <button onclick="showTasks()">Show Tasks</button>
+        <button onclick="generateReport()">Generate Report</button>
+        <div id="charts" class="hidden">
+            <canvas id="statusChart"></canvas>
+            <canvas id="categoryChart"></canvas>
+            <canvas id="priorityChart"></canvas>
+        </div>
+        <div id="report" class="hidden">No report generated yet.</div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const taskList = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateTime();
+            setInterval(updateTime, 1000);
+        });
+
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('time').innerText = now.toLocaleString();
+        }
+
+        function addTask() {
+            const category = document.getElementById('category').value;
+            const task = document.getElementById('task').value.trim();
+            const priority = document.getElementById('priority').value;
+            const status = document.getElementById('status').value;
+            const dateAdded = new Date().toLocaleString();
+
+            if (!category || !task || !priority || !status) {
+                alert('All fields are required!');
+                return;
+            }
+
+            const newTask = { category, task, priority, status, dateAdded };
+            taskList.push(newTask);
+            updateTaskList();
+            clearInputs();
+        }
+
+        function updateTaskList() {
+            const taskListElement = document.getElementById('task-list');
+            taskListElement.innerHTML = '';
+
+            taskList.forEach((task, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${task.category}</strong>: ${task.task} (Priority: ${task.priority}, Status: ${task.status}) [${task.dateAdded}]`;
+                taskListElement.appendChild(li);
+            });
+        }
+
+        function clearInputs() {
+            document.getElementById('category').value = 'Professional';
+            document.getElementById('task').value = '';
+            document.getElementById('priority').value = 'High';
+            document.getElementById('status').value = 'Completed';
+        }
+
+        function showTasks() {
+            updateTaskList();
+        }
+
+        function generateReport() {
+            const completed = taskList.filter(task => task.status === 'Completed').length;
+            const incomplete = taskList.filter(task => task.status === 'Incomplete').length;
+            const pending = taskList.filter(task => task.status === 'Pending').length;
+
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            const priorityCtx = document.getElementById('priorityChart').getContext('2d');
+
+            new Chart(statusCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Completed', 'Incomplete', 'Pending'],
+                    datasets: [{
+                        data: [completed, incomplete, pending],
+                        backgroundColor: ['#4CAF50', '#FF9800', '#F44336']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Task Status Report'
+                        }
+                    }
+                }
+            });
+
+            const categories = {};
+            taskList.forEach(task => {
+                categories[task.category] = (categories[task.category] || 0) + 1;
+            });
+            new Chart(categoryCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(categories),
+                    datasets: [{
+                        data: Object.values(categories),
+                        backgroundColor: ['#3F51B5', '#2196F3', '#00BCD4']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Task Distribution by Category'
+                        }
+                    }
+                }
+            });
+
+            const priorities = {};
+            taskList.forEach(task => {
+                priorities[task.priority] = (priorities[task.priority] || 0) + 1;
+            });
+            new Chart(priorityCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(priorities),
+                    datasets: [{
+                        data: Object.values(priorities),
+                        backgroundColor: ['#FFC107', '#FFEB3B', '#FF5722']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Task Distribution by Priority'
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('charts').classList.remove('hidden');
+            document.getElementById('report').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
